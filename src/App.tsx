@@ -7,7 +7,13 @@ import { getBasePath } from "./utils/basePath";
 export function App() {
   return (
     <AuthProvider>
-      <BrowserRouter basename={getBasePath()}>
+      <BrowserRouter
+        basename={getBasePath()}
+        future={{
+          v7_startTransition: true,
+          v7_relativeSplatPath: true
+        }}
+      >
         <Routes>
           <Route path="/" element={<Home />} />
           <Route path="/callback" element={<Callback />} />
