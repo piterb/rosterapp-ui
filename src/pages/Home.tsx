@@ -45,7 +45,7 @@ export function Home() {
     setIsFetching(true);
     try {
       const response = await apiClient.request<unknown>("/api/me", {
-        method: "POST",
+        method: "GET",
         headers: {
           "Content-Type": "application/json"
         }
@@ -78,7 +78,7 @@ export function Home() {
           <div className="mb-4 flex items-center justify-between">
             <div>
               <h2 className="text-lg font-semibold text-white">Who am I?</h2>
-              <p className="text-sm text-slate-300">Fetch your profile from `POST /api/me`.</p>
+              <p className="text-sm text-slate-300">Fetch your profile from `GET /api/me`.</p>
             </div>
             <button
               type="button"
@@ -100,7 +100,7 @@ export function Home() {
             <div className="mt-4 rounded-2xl border border-red-500/40 bg-red-500/10 p-4 text-sm text-red-100">
               <div className="font-semibold">Error {error.status}</div>
               <div>{error.message}</div>
-              {error.details && (
+              {error.details != null && (
                 <pre className="code-block mt-2 text-xs text-red-200">{JSON.stringify(error.details, null, 2)}</pre>
               )}
             </div>

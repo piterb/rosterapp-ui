@@ -43,6 +43,8 @@ Create a Single Page Application in Auth0 and configure:
   - `http://localhost:5173`
   - `https://<github-username>.github.io`
 
+If you see "Callback URL mismatch", double-check the list above and ensure your `VITE_GH_PAGES_BASE` matches your repo name.
+
 Set the following environment variables:
 
 - `VITE_AUTH0_DOMAIN`
