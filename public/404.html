@@ -1,0 +1,20 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>RosterApp UI</title>
+  </head>
+  <body>
+    <script>
+      (function () {
+        var location = window.location;
+        var pathSegments = location.pathname.split("/");
+        var repoSegment = pathSegments.length > 1 ? pathSegments[1] : "";
+        var base = repoSegment ? "/" + repoSegment : "";
+        var redirect = base + "/?redirect=" + encodeURIComponent(location.pathname + location.search + location.hash);
+        location.replace(redirect);
+      })();
+    </script>
+  </body>
+</html>
