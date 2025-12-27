@@ -1,21 +1,34 @@
 import { useCallback, useEffect, useMemo, useState, type DragEvent } from "react";
+import { useAuth } from "../auth/AuthProvider";
+import { createApiClient } from "../api/client";
+import type { ApiError } from "../api/types";
+import { JsonViewer } from "./JsonViewer";
 
 type OutputFormat = "JSON" | "ICS";
 
-const MAX_SIZE_BYTES = 10 * 1024 * 1024;
+const DEFAULT_MAX_MB = 1;
 const ALLOWED_TYPES = ["image/jpeg", "image/png"];
 
-function getFileError(file: File) {
+function getMaxSizeMb() {
+  const raw = Number.parseFloat(import.meta.env.VITE_MAX_UPLOAD_MB ?? String(DEFAULT_MAX_MB));
+  if (!Number.isFinite(raw) || raw <= 0) {
+    return DEFAULT_MAX_MB;
+  }
+  return raw;
+}
+
+function getFileError(file: File, maxSizeBytes: number) {
   const lowerName = file.name.toLowerCase();
   if (file.type === "application/pdf" || lowerName.endsWith(".pdf")) {
     return "PDF files are not supported. Please upload a JPG or PNG image.";
   }
-  const isAllowedType = ALLOWED_TYPES.includes(file.type) || lowerName.endsWith(".jpg") || lowerName.endsWith(".jpeg") || lowerName.endsWith(".png");
+  const isAllowedType =
+    ALLOWED_TYPES.includes(file.type) || lowerName.endsWith(".jpg") || lowerName.endsWith(".jpeg") || lowerName.endsWith(".png");
   if (!isAllowedType) {
     return "Only JPG and PNG images are supported.";
   }
-  if (file.size > MAX_SIZE_BYTES) {
-    return "File is too large. Maximum size is 10 MB.";
+  if (file.size > maxSizeBytes) {
+    return `File is too large. Maximum size is ${getMaxSizeMb()} MB.`;
   }
   return null;
 }
@@ -51,31 +64,49 @@ function useSimulatedProgress() {
 }
 
 export function UploadCard() {
+  const { getAccessToken, login, isAuthenticated, isLoading } = useAuth();
   const [file, setFile] = useState<File | null>(null);
-  const [error, setError] = useState<string | null>(null);
+  const [validationError, setValidationError] = useState<string | null>(null);
+  const [apiError, setApiError] = useState<ApiError | null>(null);
   const [message, setMessage] = useState<string | null>(null);
   const [outputFormat, setOutputFormat] = useState<OutputFormat>("JSON");
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
-  const { progress, isRunning, start } = useSimulatedProgress();
+  const [convertData, setConvertData] = useState<unknown | null>(null);
+  const [isConverting, setIsConverting] = useState(false);
+  const { progress, isRunning, start, setProgress, setIsRunning } = useSimulatedProgress();
 
-  const conversionEnabled = import.meta.env.VITE_ENABLE_CONVERT === "true";
+  const maxSizeMb = getMaxSizeMb();
+  const maxSizeBytes = maxSizeMb * 1024 * 1024;
 
-  const handleFile = useCallback((nextFile: File | null) => {
-    setMessage(null);
-    if (!nextFile) {
-      setFile(null);
-      setError(null);
-      return;
-    }
-    const validationError = getFileError(nextFile);
-    if (validationError) {
-      setFile(null);
-      setError(validationError);
-      return;
-    }
-    setError(null);
-    setFile(nextFile);
-  }, []);
+  const apiClient = useMemo(
+    () =>
+      createApiClient({
+        getAccessToken,
+        login
+      }),
+    [getAccessToken, login]
+  );
+
+  const handleFile = useCallback(
+    (nextFile: File | null) => {
+      setMessage(null);
+      setApiError(null);
+      if (!nextFile) {
+        setFile(null);
+        setValidationError(null);
+        return;
+      }
+      const validation = getFileError(nextFile, maxSizeBytes);
+      if (validation) {
+        setFile(null);
+        setValidationError(validation);
+        return;
+      }
+      setValidationError(null);
+      setFile(nextFile);
+    },
+    [maxSizeBytes]
+  );
 
   useEffect(() => {
     if (!file) {
@@ -101,19 +132,47 @@ export function UploadCard() {
     [handleFile]
   );
 
-  const onConvert = () => {
+  const onConvert = async () => {
+    setMessage(null);
+    setValidationError(null);
+    setApiError(null);
+
     if (!file) {
-      setError("Select an image before converting.");
+      setValidationError("Select an image before converting.");
       return;
     }
-    if (!conversionEnabled) {
-      setMessage("Coming soon: conversion is wired but disabled in Phase 1.");
-      start();
+    if (!isAuthenticated || isLoading) {
+      setValidationError("Please log in before converting.");
       return;
     }
-    // TODO: Phase 2 - send multipart/form-data to /api/roster/convert.
-    setMessage("Conversion enabled. Wiring API call is scheduled for Phase 2.");
+
+    setIsConverting(true);
+    setConvertData(null);
     start();
+
+    try {
+      const formData = new FormData();
+      formData.append("image", file);
+      formData.append("outputFormat", outputFormat);
+
+      const response = await apiClient.request<unknown>("/api/roster/convert", {
+        method: "POST",
+        body: formData
+      });
+
+      setConvertData(response);
+      setMessage("Conversion complete. JSON metadata received.");
+    } catch (err) {
+      if (err && typeof err === "object" && "status" in err) {
+        setApiError(err as ApiError);
+      } else {
+        setApiError({ status: 0, message: err instanceof Error ? err.message : "Conversion failed." });
+      }
+    } finally {
+      setIsConverting(false);
+      setProgress(100);
+      setIsRunning(false);
+    }
   };
 
   return (
@@ -121,7 +180,7 @@ export function UploadCard() {
       <div className="mb-4 flex items-center justify-between">
         <div>
           <h3 className="text-lg font-semibold text-white">Roster image convert</h3>
-          <p className="text-sm text-slate-300">Coming soon · Upload a roster screenshot for conversion.</p>
+          <p className="text-sm text-slate-300">Upload a roster screenshot for conversion.</p>
         </div>
         <span className="rounded-full border border-runway-500/60 bg-runway-500/10 px-3 py-1 text-xs font-semibold uppercase tracking-[0.2em] text-runway-500">
           Phase 2
@@ -133,7 +192,7 @@ export function UploadCard() {
         {...dropHandlers}
       >
         <p className="text-sm text-slate-300">Drag & drop your roster image here.</p>
-        <p className="mt-1 text-xs text-slate-500">JPG or PNG only · 10 MB max</p>
+        <p className="mt-1 text-xs text-slate-500">JPG or PNG only · {maxSizeMb} MB max</p>
         <label className="mt-4 inline-flex cursor-pointer items-center gap-2 rounded-full border border-slate-600/70 px-4 py-2 text-xs font-semibold uppercase tracking-[0.2em] text-slate-200 transition hover:border-runway-500 hover:text-runway-500">
           <input
             type="file"
@@ -145,8 +204,23 @@ export function UploadCard() {
         </label>
       </div>
 
-      {error && <div className="mt-4 rounded-2xl border border-red-500/40 bg-red-500/10 p-3 text-sm text-red-200">{error}</div>}
-      {message && <div className="mt-4 rounded-2xl border border-skyglass-400/40 bg-skyglass-400/10 p-3 text-sm text-skyglass-100">{message}</div>}
+      {validationError && (
+        <div className="mt-4 rounded-2xl border border-red-500/40 bg-red-500/10 p-3 text-sm text-red-200">{validationError}</div>
+      )}
+      {apiError && (
+        <div className="mt-4 rounded-2xl border border-red-500/40 bg-red-500/10 p-4 text-sm text-red-100">
+          <div className="font-semibold">Error {apiError.status}</div>
+          <div>{apiError.message}</div>
+          {apiError.details != null && (
+            <pre className="code-block mt-2 text-xs text-red-200">{JSON.stringify(apiError.details, null, 2)}</pre>
+          )}
+        </div>
+      )}
+      {message && (
+        <div className="mt-4 rounded-2xl border border-skyglass-400/40 bg-skyglass-400/10 p-3 text-sm text-skyglass-100">
+          {message}
+        </div>
+      )}
 
       <div className="mt-6 grid gap-4 lg:grid-cols-[1.2fr,1fr]">
         <div className="rounded-2xl border border-slate-700/60 bg-slate-950/60 p-4">
@@ -181,16 +255,12 @@ export function UploadCard() {
 
           <button
             type="button"
-            onClick={onConvert}
-            disabled={!file}
+            onClick={() => void onConvert()}
+            disabled={!file || isConverting}
             className="mt-5 w-full rounded-xl bg-runway-500/80 px-4 py-3 text-sm font-semibold uppercase tracking-[0.2em] text-slate-950 transition hover:bg-runway-500 disabled:cursor-not-allowed disabled:bg-slate-700/50 disabled:text-slate-400"
           >
-            Convert image
+            {isConverting ? "Converting..." : "Convert image"}
           </button>
-
-          <div className="mt-3 text-xs text-slate-500">
-            {conversionEnabled ? "Backend conversion enabled." : "Conversion is feature-flagged off for Phase 1."}
-          </div>
         </div>
       </div>
 
@@ -200,12 +270,13 @@ export function UploadCard() {
           <span>{Math.round(progress)}%</span>
         </div>
         <div className="h-2 w-full overflow-hidden rounded-full bg-slate-800">
-          <div
-            className="h-full rounded-full bg-runway-500 transition"
-            style={{ width: `${progress}%` }}
-          />
+          <div className="h-full rounded-full bg-runway-500 transition" style={{ width: `${progress}%` }} />
         </div>
-        <div className="mt-2 text-xs text-slate-500">{isRunning ? "Simulating upload..." : "Ready."}</div>
+        <div className="mt-2 text-xs text-slate-500">{isRunning ? "Uploading..." : "Ready."}</div>
+      </div>
+
+      <div className="mt-6">
+        <JsonViewer data={convertData} title="/api/roster/convert response" />
       </div>
     </div>
   );

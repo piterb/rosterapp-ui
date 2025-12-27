@@ -4,8 +4,8 @@ A production-ready frontend SPA for RosterApp. Built with React, Vite, TypeScrip
 
 ## Features
 - Auth0 authentication (Authorization Code + PKCE)
-- Phase 1: POST `/api/me` and render raw JSON
-- Phase 2 scaffold: roster image upload UI (JPG/PNG validation + simulated progress)
+- Phase 1: GET `/api/me` and render raw JSON
+- Phase 2: roster image upload UI (JPG/PNG validation + max size env + convert call)
 - Debug panel in dev mode (redacts Authorization header)
 - GitHub Pages deployment workflow
 
@@ -52,6 +52,7 @@ Set the following environment variables:
 - `VITE_AUTH0_AUDIENCE` (optional unless your API expects an audience)
 - `VITE_BACKEND_BASE_URL` (defaults to the Cloud Run URL)
 - `VITE_GH_PAGES_BASE` (e.g. `/rosterapp-ui`)
+- `VITE_MAX_UPLOAD_MB` (max image size in MB, default 1)
 
 ## Backend CORS requirements
 
@@ -99,3 +100,13 @@ npm run test
 - Tokens are stored in memory only. Nothing is written to localStorage or sessionStorage.
 - Authorization headers are redacted in debug output.
 - GitHub Pages does not support SPA history fallback by default; the `public/404.html` file redirects users back to the app.
+
+## Roster convert API (Phase 2)
+
+The convert call uses `POST /api/roster/convert` with `multipart/form-data`:
+
+- `image`: the uploaded roster image (PNG/JPG)
+- `outputFormat`: `JSON` or `ICS`
+- `yearMonth` or `dateFrom` / `dateTo` (future fields)
+
+The UI validates PNG/JPG and max file size before upload and displays JSON output after success.

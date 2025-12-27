@@ -8,6 +8,7 @@ interface ImportMetaEnv {
   readonly VITE_GH_PAGES_BASE?: string;
   readonly VITE_APP_BUILD?: string;
   readonly VITE_ENABLE_CONVERT?: string;
+  readonly VITE_MAX_UPLOAD_MB?: string;
 }
 
 interface ImportMeta {
