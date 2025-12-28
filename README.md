@@ -23,6 +23,8 @@ npm install
 cp .env.example .env
 ```
 
+Tests use `.env.test` (checked into git) for deterministic configuration.
+
 3) Run the dev server
 
 ```bash
