@@ -22,12 +22,17 @@ vi.mock("../auth/AuthProvider", () => ({
 
 describe("UploadCard", () => {
   beforeAll(() => {
+    vi.stubEnv("VITE_UI_DEBUG", "false");
     if (!URL.createObjectURL) {
       URL.createObjectURL = () => "blob:mock";
     }
     if (!URL.revokeObjectURL) {
       URL.revokeObjectURL = () => {};
     }
+  });
+
+  afterAll(() => {
+    vi.unstubAllEnvs();
   });
 
   beforeEach(() => {
@@ -56,7 +61,7 @@ describe("UploadCard", () => {
     expect(await screen.findByText(/pdf files are not supported/i)).toBeInTheDocument();
   });
 
-  it("renders JSON output after successful conversion", async () => {
+  it("renders success message after JSON conversion", async () => {
     requestMock.mockResolvedValueOnce({ data: { status: "ok", flights: 3 }, contentType: "application/json" });
 
     render(<UploadCard />);
@@ -68,7 +73,6 @@ describe("UploadCard", () => {
     fireEvent.click(screen.getByRole("button", { name: /convert image/i }));
 
     expect(await screen.findByText(/conversion complete/i)).toBeInTheDocument();
-    expect(await screen.findByText(/\"status\": \"ok\"/i)).toBeInTheDocument();
   });
 
   it("shows API errors", async () => {
@@ -87,17 +91,17 @@ describe("UploadCard", () => {
   });
 
   it("shows ICS download when calendar is returned", async () => {
-    requestMock.mockResolvedValueOnce({ data: \"BEGIN:VCALENDAR\\nEND:VCALENDAR\", contentType: \"text/calendar\" });
+    requestMock.mockResolvedValueOnce({ data: "BEGIN:VCALENDAR\nEND:VCALENDAR", contentType: "text/calendar" });
 
     render(<UploadCard />);
 
     const input = screen.getByLabelText(/choose file/i) as HTMLInputElement;
-    const image = new File([new Uint8Array(200)], \"roster.png\", { type: \"image/png\" });
+    const image = new File([new Uint8Array(200)], "roster.png", { type: "image/png" });
     fireEvent.change(input, { target: { files: [image] } });
 
-    fireEvent.click(screen.getByRole(\"button\", { name: /convert image/i }));
+    fireEvent.click(screen.getByRole("button", { name: /convert image/i }));
 
     expect(await screen.findByText(/ics output/i)).toBeInTheDocument();
-    expect(await screen.findByText(/download roster\\.ics/i)).toBeInTheDocument();
+    expect(await screen.findByRole("link", { name: /download roster\.ics/i })).toBeInTheDocument();
   });
 });
