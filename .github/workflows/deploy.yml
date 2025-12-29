@@ -37,6 +37,12 @@ jobs:
         env:
           VITE_GH_PAGES_BASE: /${{ github.event.repository.name }}
           VITE_APP_BUILD: ${{ github.sha }}
+          VITE_AUTH0_DOMAIN: ${{ vars.VITE_AUTH0_DOMAIN }}
+          VITE_AUTH0_CLIENT_ID: ${{ vars.VITE_AUTH0_CLIENT_ID }}
+          VITE_AUTH0_AUDIENCE: ${{ vars.VITE_AUTH0_AUDIENCE }}
+          VITE_BACKEND_BASE_URL: ${{ vars.VITE_BACKEND_BASE_URL }}
+          VITE_UI_DEBUG: ${{ vars.VITE_UI_DEBUG }}
+          VITE_MAX_UPLOAD_MB: ${{ vars.VITE_MAX_UPLOAD_MB }}
         run: npm run build
 
       - name: Configure Pages
