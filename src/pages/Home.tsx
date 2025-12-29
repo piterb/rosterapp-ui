@@ -11,7 +11,7 @@ import { getBasePath } from "../utils/basePath";
 
 export function Home() {
   const { getAccessToken, login, isAuthenticated, isLoading } = useAuth();
-  const isDebugUi = import.meta.env.VITE_UI_DEBUG !== "false";
+  const isDebugUi = import.meta.env.VITE_UI_DEBUG === "true";
   const [meData, setMeData] = useState<unknown | null>(null);
   const [error, setError] = useState<ApiError | null>(null);
   const [isFetching, setIsFetching] = useState(false);

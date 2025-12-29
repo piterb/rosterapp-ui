@@ -70,7 +70,7 @@ export function UploadCard() {
   const [apiError, setApiError] = useState<ApiError | null>(null);
   const [message, setMessage] = useState<string | null>(null);
   const [outputFormat, setOutputFormat] = useState<OutputFormat>("ICS");
-  const isDebugUi = import.meta.env.VITE_UI_DEBUG !== "false";
+  const isDebugUi = import.meta.env.VITE_UI_DEBUG === "true";
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const [convertData, setConvertData] = useState<unknown | null>(null);
   const [icsText, setIcsText] = useState<string | null>(null);
