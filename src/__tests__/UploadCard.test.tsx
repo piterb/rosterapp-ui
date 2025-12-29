@@ -6,7 +6,8 @@ const requestMock = vi.fn();
 
 vi.mock("../api/client", () => ({
   createApiClient: () => ({
-    request: requestMock
+    request: requestMock,
+    requestWithMeta: requestMock
   })
 }));
 
@@ -56,7 +57,7 @@ describe("UploadCard", () => {
   });
 
   it("renders JSON output after successful conversion", async () => {
-    requestMock.mockResolvedValueOnce({ status: "ok", flights: 3 });
+    requestMock.mockResolvedValueOnce({ data: { status: "ok", flights: 3 }, contentType: "application/json" });
 
     render(<UploadCard />);
 
@@ -83,5 +84,20 @@ describe("UploadCard", () => {
 
     expect(await screen.findByText(/error 500/i)).toBeInTheDocument();
     expect(await screen.findByText(/conversion failed/i)).toBeInTheDocument();
+  });
+
+  it("shows ICS download when calendar is returned", async () => {
+    requestMock.mockResolvedValueOnce({ data: \"BEGIN:VCALENDAR\\nEND:VCALENDAR\", contentType: \"text/calendar\" });
+
+    render(<UploadCard />);
+
+    const input = screen.getByLabelText(/choose file/i) as HTMLInputElement;
+    const image = new File([new Uint8Array(200)], \"roster.png\", { type: \"image/png\" });
+    fireEvent.change(input, { target: { files: [image] } });
+
+    fireEvent.click(screen.getByRole(\"button\", { name: /convert image/i }));
+
+    expect(await screen.findByText(/ics output/i)).toBeInTheDocument();
+    expect(await screen.findByText(/download roster\\.ics/i)).toBeInTheDocument();
   });
 });

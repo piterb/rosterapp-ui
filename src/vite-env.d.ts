@@ -9,6 +9,7 @@ interface ImportMetaEnv {
   readonly VITE_APP_BUILD?: string;
   readonly VITE_ENABLE_CONVERT?: string;
   readonly VITE_MAX_UPLOAD_MB?: string;
+  readonly VITE_UI_DEBUG?: string;
 }
 
 interface ImportMeta {

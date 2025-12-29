@@ -11,6 +11,7 @@ import { getBasePath } from "../utils/basePath";
 
 export function Home() {
   const { getAccessToken, login, isAuthenticated, isLoading } = useAuth();
+  const isDebugUi = import.meta.env.VITE_UI_DEBUG !== "false";
   const [meData, setMeData] = useState<unknown | null>(null);
   const [error, setError] = useState<ApiError | null>(null);
   const [isFetching, setIsFetching] = useState(false);
@@ -74,69 +75,75 @@ export function Home() {
           </div>
         )}
 
-        <section className="glass-panel rounded-3xl p-6 shadow-panel">
-          <div className="mb-4 flex items-center justify-between">
-            <div>
-              <h2 className="text-lg font-semibold text-white">Who am I?</h2>
-              <p className="text-sm text-slate-300">Fetch your profile from `GET /api/me`.</p>
-            </div>
-            <button
-              type="button"
-              onClick={() => void loadMe()}
-              disabled={isFetching || !isAuthenticated || isLoading}
-              className="rounded-full bg-skyglass-500 px-5 py-2 text-xs font-semibold uppercase tracking-[0.2em] text-slate-950 transition hover:bg-skyglass-400 disabled:cursor-not-allowed disabled:bg-slate-700/50 disabled:text-slate-400"
-            >
-              {isFetching ? "Loading..." : "Load /api/me"}
-            </button>
-          </div>
-
-          {!isAuthenticated && !isLoading && (
-            <div className="rounded-2xl border border-slate-700/60 bg-slate-950/60 p-4 text-sm text-slate-400">
-              Please log in to fetch your profile.
-            </div>
-          )}
-
-          {error && (
-            <div className="mt-4 rounded-2xl border border-red-500/40 bg-red-500/10 p-4 text-sm text-red-100">
-              <div className="font-semibold">Error {error.status}</div>
-              <div>{error.message}</div>
-              {error.details != null && (
-                <pre className="code-block mt-2 text-xs text-red-200">{JSON.stringify(error.details, null, 2)}</pre>
-              )}
-            </div>
-          )}
-
-          <div className="mt-4">
-            <JsonViewer data={meData} title="/api/me response" />
-          </div>
-        </section>
-
-        <section>
-          <UploadCard />
-        </section>
-
-        <footer className="flex flex-col gap-3 border-t border-slate-800/80 pt-6 text-xs text-slate-500 sm:flex-row sm:items-center sm:justify-between">
-          <div>Build: {import.meta.env.VITE_APP_BUILD ?? "local"}</div>
-          <div className="flex items-center gap-4">
-            <a
-              href="https://github.com/<github-username>/<repo-name>"
-              className="text-slate-400 transition hover:text-runway-500"
-            >
-              Repo
-            </a>
-            {import.meta.env.DEV && (
+        {isDebugUi && (
+          <section className="glass-panel rounded-3xl p-6 shadow-panel">
+            <div className="mb-4 flex items-center justify-between">
+              <div>
+                <h2 className="text-lg font-semibold text-white">Who am I?</h2>
+                <p className="text-sm text-slate-300">Fetch your profile from `GET /api/me`.</p>
+              </div>
               <button
                 type="button"
-                onClick={() => setShowDebug((prev) => !prev)}
-                className="rounded-full border border-slate-700/70 px-3 py-1 text-[10px] font-semibold uppercase tracking-[0.2em] text-slate-400 transition hover:border-runway-500 hover:text-runway-500"
+                onClick={() => void loadMe()}
+                disabled={isFetching || !isAuthenticated || isLoading}
+                className="rounded-full bg-skyglass-500 px-5 py-2 text-xs font-semibold uppercase tracking-[0.2em] text-slate-950 transition hover:bg-skyglass-400 disabled:cursor-not-allowed disabled:bg-slate-700/50 disabled:text-slate-400"
               >
-                {showDebug ? "Hide debug" : "Show debug"}
+                {isFetching ? "Loading..." : "Load /api/me"}
               </button>
-            )}
-          </div>
-        </footer>
+            </div>
 
-        {showDebug && <DebugPanel />}
+            {!isAuthenticated && !isLoading && (
+              <div className="rounded-2xl border border-slate-700/60 bg-slate-950/60 p-4 text-sm text-slate-400">
+                Please log in to fetch your profile.
+              </div>
+            )}
+
+            {error && (
+              <div className="mt-4 rounded-2xl border border-red-500/40 bg-red-500/10 p-4 text-sm text-red-100">
+                <div className="font-semibold">Error {error.status}</div>
+                <div>{error.message}</div>
+                {error.details != null && (
+                  <pre className="code-block mt-2 text-xs text-red-200">{JSON.stringify(error.details, null, 2)}</pre>
+                )}
+              </div>
+            )}
+
+            <div className="mt-4">
+              <JsonViewer data={meData} title="/api/me response" />
+            </div>
+          </section>
+        )}
+
+        {isAuthenticated && (
+          <section>
+            <UploadCard />
+          </section>
+        )}
+
+        {isDebugUi && (
+          <footer className="flex flex-col gap-3 border-t border-slate-800/80 pt-6 text-xs text-slate-500 sm:flex-row sm:items-center sm:justify-between">
+            <div>Build: {import.meta.env.VITE_APP_BUILD ?? "local"}</div>
+            <div className="flex items-center gap-4">
+              <a
+                href="https://github.com/<github-username>/<repo-name>"
+                className="text-slate-400 transition hover:text-runway-500"
+              >
+                Repo
+              </a>
+              {import.meta.env.DEV && (
+                <button
+                  type="button"
+                  onClick={() => setShowDebug((prev) => !prev)}
+                  className="rounded-full border border-slate-700/70 px-3 py-1 text-[10px] font-semibold uppercase tracking-[0.2em] text-slate-400 transition hover:border-runway-500 hover:text-runway-500"
+                >
+                  {showDebug ? "Hide debug" : "Show debug"}
+                </button>
+              )}
+            </div>
+          </footer>
+        )}
+
+        {isDebugUi && showDebug && <DebugPanel />}
       </div>
     </div>
   );

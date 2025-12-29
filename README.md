@@ -55,6 +55,7 @@ Set the following environment variables:
 - `VITE_BACKEND_BASE_URL` (defaults to the Cloud Run URL)
 - `VITE_GH_PAGES_BASE` (e.g. `/rosterapp-ui`)
 - `VITE_MAX_UPLOAD_MB` (max image size in MB, default 1)
+- `VITE_UI_DEBUG` (`true` shows full debug UI, `false` shows minimal UI)
 
 ## Backend CORS requirements
 
@@ -108,7 +109,9 @@ npm run test
 The convert call uses `POST /api/roster/convert` with `multipart/form-data`:
 
 - `image`: the uploaded roster image (PNG/JPG)
-- `outputFormat`: `JSON` or `ICS`
+- `format`: `JSON` or `ICS`
 - `yearMonth` or `dateFrom` / `dateTo` (future fields)
 
 The UI validates PNG/JPG and max file size before upload and displays JSON output after success.
+If the backend returns `text/calendar`, the UI offers an `.ics` download (and share on supported mobile browsers).
+When `VITE_UI_DEBUG=false`, the UI is minimized to Login/Logout + upload + ICS download only.

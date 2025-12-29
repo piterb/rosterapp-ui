@@ -12,6 +12,11 @@ type TokenProvider = {
   login: () => Promise<void>;
 };
 
+type RequestResult<T> = {
+  data: T;
+  contentType: string;
+};
+
 const RETRY_DELAYS_MS = [300, 900, 2700];
 
 function sleep(ms: number) {
@@ -54,7 +59,7 @@ function normalizeError(status: number, payload: unknown): ApiError {
 }
 
 export function createApiClient(tokenProvider: TokenProvider) {
-  async function request<T>(path: string, options: RequestOptions = {}) {
+  async function requestWithMeta<T>(path: string, options: RequestOptions = {}): Promise<RequestResult<T>> {
     const url = `${getBackendBaseUrl()}${path}`;
     const method = options.method ?? "GET";
     const headers: Record<string, string> = {
@@ -101,7 +106,7 @@ export function createApiClient(tokenProvider: TokenProvider) {
           throw normalizeError(response.status, data);
         }
 
-        return data as T;
+        return { data: data as T, contentType };
       } catch (error) {
         const isNetworkError = error instanceof TypeError;
         const authError = error && typeof error === "object" && "error" in error ? (error as { error?: string }).error : undefined;
@@ -124,7 +129,13 @@ export function createApiClient(tokenProvider: TokenProvider) {
     }
   }
 
+  async function request<T>(path: string, options: RequestOptions = {}) {
+    const result = await requestWithMeta<T>(path, options);
+    return result.data;
+  }
+
   return {
-    request
+    request,
+    requestWithMeta
   };
 }
