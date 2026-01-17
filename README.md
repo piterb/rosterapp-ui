@@ -1,6 +1,6 @@
 # RosterApp UI
 
-A production-ready frontend SPA for RosterApp. Built with React, Vite, TypeScript, and Tailwind CSS.
+A frontend SPA for RosterApp. Built with React, Vite, TypeScript, and Tailwind CSS.
 
 ## Features
 - Auth0 authentication (Authorization Code + PKCE)
